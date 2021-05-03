@@ -1,8 +1,15 @@
 # QWOP AI Agent
 
 ## Odpalanie gry lokalnie
-*WSL*: `cd game; flash.exe athletics.awf`
 
-*Windows*: uruchomić flash.exe i wybrać plik athletics.swf
+*WSL*:  
+<code> 
+cd game  
+./flash.exe athletics.awf` 
+</code>
 
-*inne*: jeszcze nie wieem xd spróbuję znaleźć MacOS'owego flash playera
+*Windows*:  
+uruchomić flash.exe i wybrać plik athletics.swf
+
+*inne*:  
+jeszcze nie wieem xd spróbuję znaleźć MacOS'owego flash playera
