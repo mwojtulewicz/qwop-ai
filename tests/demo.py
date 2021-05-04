@@ -15,7 +15,7 @@ sct = mss.mss()
 windows_before = pgw.getAllTitles()
 print('windows before : ', len(windows_before))
 
-# starting game in detached mode (on Windows in detached mode)
+# starting the game (on Windows in detached mode)
 game_path = 'C:/Users/mateu/Documents/studia/6semestr/sp/source/game'
 command = f'START /B {game_path}/flash.exe {game_path}/athletics.swf'
 print('starting game...')
@@ -65,14 +65,14 @@ game_bbox = {"top": game_window.top + 174, "left": game_window.left + 10, "width
 # screen shot
 sct_img = sct.grab(game_bbox)
 # save
-mss.tools.to_png(sct_img.rgb, sct_img.size, output="game.png")
+mss.tools.to_png(sct_img.rgb, sct_img.size, output="images/game.png")
 
 # score
 score_bbox = {"top": game_window.top + 89, "left": game_window.left + 250, "width": 320, "height": 40}
 # screen shot
 sct_img = sct.grab(score_bbox)
 # save
-mss.tools.to_png(sct_img.rgb, sct_img.size, output="score.png")
+mss.tools.to_png(sct_img.rgb, sct_img.size, output="images/score.png")
 
 
 # ----------------------------------------------------------------------------
