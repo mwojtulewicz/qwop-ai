@@ -16,7 +16,7 @@ windows_before = pgw.getAllTitles()
 print('windows before : ', len(windows_before))
 
 # starting the game (on Windows in detached mode)
-game_path = 'C:/Users/mateu/Documents/studia/6semestr/sp/source/game'
+game_path = '../game'
 command = f'START /B {game_path}/flash.exe {game_path}/athletics.swf'
 print('starting game...')
 os.system(command)
