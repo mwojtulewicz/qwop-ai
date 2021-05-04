@@ -5,7 +5,7 @@
 *WSL*:  
 <code> 
 cd game  
-./flash.exe athletics.awf` 
+./flash.exe athletics.awf 
 </code>
 
 *Windows*:  
