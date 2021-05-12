@@ -19,4 +19,4 @@ Stworzyłem plik **LocalSettings.py** w głównym folderze, w którym przechowyw
 
 Dodałem go do gitignore, żeby każdy mógł mieć własne ustawienia i nie generować konfliktów gita.
 
-Należy pobrać ten plik z **discorda** pobrać i dodać do repozytorium.
+Należy pobrać ten plik z **discorda** i dodać do repozytorium.
