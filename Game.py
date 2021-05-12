@@ -9,7 +9,11 @@ import mss
 import os
 import re
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+# local settings
+from LocalSettings import LocalSettings
+pytesseract.pytesseract.tesseract_cmd = LocalSettings.PYTESSERACT_EXE
+GAME_PATH = LocalSettings.GAME_PATH
 
 # constants
 # general
@@ -46,7 +50,7 @@ ACTION_LOOKUP = {
 
 class Game:
 
-    def __init__(self, game_path):
+    def __init__(self, game_path=GAME_PATH):
         # game initialization
         self.sct = mss.mss()
         self.window = self.open_window(game_path)

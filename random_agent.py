@@ -2,7 +2,7 @@ import random
 import time
 from Game import Game
 
-env = Game('game')
+env = Game()
 
 for i in range(5):
     action = random.choice([0,1,2,3,4])
