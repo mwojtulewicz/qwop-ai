@@ -6,8 +6,8 @@ env = Game()
 
 for i in range(5):
     action = random.choice([0,1,2,3,4])
-    state, reward, done, dict = env.step(action)
-    print(f'{i} -- action: {action}, reward: {reward}, done: {done}, dict: {dict}, state_shape={state.shape}')
+    state, reward, done, d = env.step(action)
+    print(f'{i} -- action: {action}, reward: {reward}, done: {done}, dict: {d}, state_shape={state.shape}')
 
 env.pause()
 print('game paused...')
