@@ -70,12 +70,13 @@ class Game:
         # self.unpause()
         self.take_action(action)
         game_shot, score_shot = self.take_screen_shots()
+        # self.pause()
         game_state = np.array(game_shot, dtype=np.uint8)[:,:,:3]
         score = self.get_score(score_shot)
-        # self.pause()
         self.game_steps += 1
         done = self.is_done(game_state)
         reward = self.calculate_reward(score)
+        # reward = (score, self.game_steps)
         return game_state, reward, done, {}
 
     def reset(self):
