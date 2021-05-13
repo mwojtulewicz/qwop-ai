@@ -2,9 +2,14 @@
 
 import os
 
-GAME_PATH = 'C:/Users/mateu/Documents/studia/6semestr/sp/source/game'
 
-# starting the game in detached mode on Windows
-command = f'START /B {GAME_PATH}/flash.exe {GAME_PATH}/athletics.swf'
-print('starting...')
-os.system(command)
+def start():
+    GAME_PATH = '../game'
+
+    # starting the game in detached mode on Windows
+    command = f'START /B {GAME_PATH}/flash.exe {GAME_PATH}/athletics.swf'
+    print('starting...')
+    os.system(command)
+
+if __name__=='__main__':
+    start()

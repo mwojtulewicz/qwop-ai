@@ -54,6 +54,12 @@ for key in 'qwop':
     time.sleep(0.08)
     pyautogui.keyUp(key)
 
+# pausing test
+q_button = (game_window.left + 10 + 10, game_window.top + 64 + 10)
+pyautogui.click(q_button)
+print('pausing...')
+time.sleep(2)
+pyautogui.click(q_button)
 
 # -----------------------------------------------------------------------------
 # screen shot
