@@ -34,18 +34,15 @@ GAME_WIDTH = 800
 GAME_HEIGHT = 380
 PAUSE_X = FULL_HOFFSET + 10
 PAUSE_Y = FULL_VOFFSET + 10
-# actions LUT - 9 legal key combinations
-# can be used in both basic (5 first actions) and full versions
+MUTE_X  = FULL_HOFFSET + GAME_WIDTH - 10
+# actions LUT - noop and 4 keys
+# noop is represented as 'n' to ensure that each action lasts equally long
 ACTION_LOOKUP = {
-    0 : '',
+    0 : 'n',
     1 : 'q',
     2 : 'w',
     3 : 'o',
-    4 : 'p',
-    5 : 'qo',
-    6 : 'qp',
-    7 : 'wo',
-    8 : 'wp'
+    4 : 'p'
 }
 
 class Game:
@@ -58,15 +55,19 @@ class Game:
         
         self.game_steps = 0
         self.paused = False
+        self.last_paused_ts = time.time()
+        self.paused_time = 0
+        self.unpaused_time = 0
 
         self.activate_game()
+        self.mute()
         self.pause()
 
 
     def step(self, action):
         # one step in agent-env information loop
         # returns: observation, reward, done, info_dict
-        # game is unpaused only when receiving an action
+        # game is unpaused only when taking an action
         self.unpause()
         self.take_action(action)
         game_shot, score_shot = self.take_screen_shots()
@@ -77,7 +78,11 @@ class Game:
         done = self.is_done(game_state)
         # reward = self.calculate_reward(score)
         reward = (score, self.game_steps)
-        return game_state, reward, done, {}
+        info_dict = {
+            'unpaused_time': self.unpaused_time,
+            'paused_time': self.paused_time
+        }
+        return game_state, reward, done, info_dict
 
     def reset(self):
         # uses qwop reset function
@@ -99,19 +104,21 @@ class Game:
     def pause(self):
         # click '?' button in top left corner
         if not self.paused:
-            q_button = (self.window.left+PAUSE_X, self.window.top+PAUSE_Y)
-            pyautogui.click(q_button)
+            pyautogui.click(self.q_button)
+            self.unpaused_time = time.time() - self.last_paused_ts
+            self.last_paused_ts += self.unpaused_time
             self.paused = True
-            print('paused')
+            # print(f'paused on {self.last_paused_ts}')
 
 
     def unpause(self):
         # click '?' button in top left corner
         if self.paused:
-            q_button = (self.window.left+PAUSE_X, self.window.top+PAUSE_Y)
-            pyautogui.click(q_button)
+            pyautogui.click(self.q_button)
+            self.paused_time = time.time() - self.last_paused_ts
+            self.last_paused_ts += self.paused_time
             self.paused = False
-            print('unpaused')
+            # print(f'unpaused on {self.last_paused_ts}')
 
     
     def open_window(self, game_path):
@@ -143,15 +150,15 @@ class Game:
             "left": self.window.left+SCORE_HOFFSET, 
             "width": SCORE_WIDTH,
             "height": SCORE_HEIGHT}
+        self.q_button = (self.window.left+PAUSE_X, self.window.top+PAUSE_Y)
+        self.mute_button = (self.window.left+MUTE_X, self.window.top+PAUSE_Y)
 
-    def take_action(self, action):
-        actions = ACTION_LOOKUP[action]
-        for c in actions:
-            pyautogui.keyDown(c)
+    def take_action(self, action_index):
+        action = ACTION_LOOKUP[action_index]
+        pyautogui.keyDown(action)
         time.sleep(PRESS_TIME)
-        for c in actions:
-            pyautogui.keyUp(c)
-
+        pyautogui.keyUp(action)
+        
     def take_screen_shots(self):
         # returns both game and score BGRA screenshots
         game_shot = self.sct.grab(self.game_mon)
@@ -159,7 +166,7 @@ class Game:
         return game_shot, score_shot
 
     def get_score(self, shot):
-        img = np.array(shot)[:,:,:3]  # takes 1 channel and invertes it
+        img = np.array(shot)[:,:,:3]  # takes 1 channel
         score = pytesseract.image_to_string(image=img)
         regex = re.compile("-?[0-9]+.?[0-9]")
         result = regex.findall(score)
@@ -184,6 +191,10 @@ class Game:
         pyautogui.click(self.window.center)
         time.sleep(0.2)
         # self.pause()
+    
+    def mute(self):
+        # click mute button in top right corner
+        pyautogui.click(self.mute_button)
 
 
 

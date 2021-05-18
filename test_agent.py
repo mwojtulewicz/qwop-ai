@@ -4,17 +4,24 @@ from Game import Game
 from matplotlib import pyplot as plt
 
 env = Game()
-actions = list(range(9))
+actions = list(range(5))
 print(actions)
+n = 21
 
-for i in range(21):
+start = time.time()
+
+for i in range(n):
     action = random.choice(actions)
     state, reward, done, d = env.step(action)
-    print(f'{i} -- action: {action}, reward: {reward}, done: {done}, dict: {d}, state_shape={state.shape}')
-    if i%5==0:
-        plt.imshow(state)
-        plt.title(f'frame: {i} -- action: {action}, reward: {reward}, done: {done}, dict: {d}')
-        plt.show()
+    print(f'{i} -- action: {action}, reward: {reward}, done: {done}, dict: {d}')
+    # if i%5==0:
+    #     plt.imshow(state)
+    #     plt.title(f'frame: {i} -- action: {action}, reward: {reward}, done: {done}, dict: {d}')
+    #     plt.show()
+
+stop = time.time()
+
+print('elapsed time: {:.2f}, fps = {:.2f}'.format(stop-start, n/(stop-start)))
 
 # env.pause()
 # print('game paused...')
