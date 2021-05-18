@@ -75,8 +75,8 @@ class Game:
         score = self.get_score(score_shot)
         self.game_steps += 1
         done = self.is_done(game_state)
-        reward = self.calculate_reward(score)
-        # reward = (score, self.game_steps)
+        # reward = self.calculate_reward(score)
+        reward = (score, self.game_steps)
         return game_state, reward, done, {}
 
     def reset(self):
@@ -166,9 +166,9 @@ class Game:
         return float(score)
 
     def is_done(self, game_shot):
-        # TODO: check if shot shows final screen
-        # raise NotImplementedError
-        return False
+        value = [0, 255, 255]
+        coords = (46, 195)
+        return all(game_shot[coords] == value)
 
     def calculate_reward(self, score):
         # TODO: define reward function
