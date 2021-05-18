@@ -60,17 +60,17 @@ class Game:
         self.paused = False
 
         self.activate_game()
-        # self.pause()
+        self.pause()
 
 
     def step(self, action):
         # one step in agent-env information loop
         # returns: observation, reward, done, info_dict
-        # maybe: unpause and pause
-        # self.unpause()
+        # game is unpaused only when receiving an action
+        self.unpause()
         self.take_action(action)
         game_shot, score_shot = self.take_screen_shots()
-        # self.pause()
+        self.pause()
         game_state = np.array(game_shot, dtype=np.uint8)[:,:,:3]
         score = self.get_score(score_shot)
         self.game_steps += 1
@@ -85,7 +85,7 @@ class Game:
         pyautogui.keyDown('r')
         time.sleep(PRESS_TIME)
         pyautogui.keyUp('r')
-        # self.pause()
+        self.pause()
         self.game_steps = 0
 
     def close(self):
@@ -102,6 +102,8 @@ class Game:
             q_button = (self.window.left+PAUSE_X, self.window.top+PAUSE_Y)
             pyautogui.click(q_button)
             self.paused = True
+            print('paused')
+
 
     def unpause(self):
         # click '?' button in top left corner
@@ -109,6 +111,8 @@ class Game:
             q_button = (self.window.left+PAUSE_X, self.window.top+PAUSE_Y)
             pyautogui.click(q_button)
             self.paused = False
+            print('unpaused')
+
     
     def open_window(self, game_path):
         # close all game windows
