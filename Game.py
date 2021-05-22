@@ -94,8 +94,8 @@ class Game:
         self.game_steps = 0
 
     def close(self):
-        # is it useful?
-        pass
+        # only closes game window
+        self.window.close()
 
     def render(self, mode='human'):
         # is it useful?
@@ -177,6 +177,7 @@ class Game:
         return float(score)
 
     def is_done(self, game_shot):
+        # yellow in BGR
         value = [0, 255, 255]
         coords = (46, 195)
         return all(game_shot[coords] == value)
@@ -195,10 +196,4 @@ class Game:
     def mute(self):
         # click mute button in top right corner
         pyautogui.click(self.mute_button)
-
-
-
-
-
-
 
