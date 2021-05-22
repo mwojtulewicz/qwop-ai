@@ -1,0 +1,55 @@
+NOTATKI
+
+-----
+
+TODO
+
+1. zebranie dużego zbioru zrzutów ekranu
+2. wyuczenie autoencodera na tych zrzutach
+3. zamrożenie tylko części encodera i zapisanie go do pliku
+4. stworzenie algorytmu pętli uczącej z podstawowym agentem  <---done-ish
+	- zrzut ekranu
+	- przetworzenie zrzutu
+		- kodowanie obszaru gry - stan środowiska (przy użyciu encodera)
+		- ekstrakcja wyniku - na tej podstawie nagroda
+	- nagroda
+		- algorytm obliczania nagrody
+		- przesłanie nagrody agentowi
+	- decyzja agenta -> akcja
+	- ...
+
+narazie próba bez autoencodera
+
+-------
+
+4 agenci, + porównanie ich wyników
+
+- Deep Q-Learning
+- Double Deep Q-Learning
+- Deep Q-Learning with Replay Buffer
+- Double Deep Q-Learning with Replay Buffer
+
+---------
+
+Deep Q-Learning algorithm (pseudocode)
+
+init Q network (with wages W, Huber loss, Adam optimizer)
+for episode=1...M do 
+	init env, get S_1
+	for t=1...T do
+		with probability eps select random action A_t
+		otherwise select A_t = max_A(Q(S_t,A)|W)
+		execute A_t -> observe reward R_t, and state S_t+1
+		perform a gradient descent on Q
+			input = S_t
+			output = (1-lr)*Q(S_t,A_t) + lr*(R_t + gamma*max_A(Q(S_t+1,A|W)))
+	end for
+end for
+
+--
+w DDQL wartość TD (Temporal Difference) jest aproksymowana przez sieć Target Network,
+która jest aktualizowana co X iteracji wartościami wag sieci podstawowej Q.
+
+--
+w opcji z Replay Buffer co każdą wykonaną akcję dodawana jest do RB krotka (S_t,A_t,R_t,S_t+1),
+dodatkowo gradient descent jest wykonywany na batchu z RB.
