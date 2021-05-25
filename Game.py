@@ -32,6 +32,7 @@ GAME_HOFFSET = 10
 GAME_VOFFSET = 174
 GAME_WIDTH = 800
 GAME_HEIGHT = 380
+CHANNELS = 3
 PAUSE_X = FULL_HOFFSET + 10
 PAUSE_Y = FULL_VOFFSET + 10
 MUTE_X  = FULL_HOFFSET + GAME_WIDTH - 10
@@ -63,6 +64,9 @@ class Game:
         self.mute()
         self.pause()
 
+        self.action_space = len(ACTION_LOOKUP)
+        self.state_space = (GAME_HEIGHT, GAME_WIDTH, CHANNELS)
+
 
     def step(self, action):
         # one step in agent-env information loop
@@ -72,7 +76,7 @@ class Game:
         self.take_action(action)
         game_shot, score_shot = self.take_screen_shots()
         self.pause()
-        game_state = np.array(game_shot, dtype=np.uint8)[:,:,:3]
+        game_state = np.array(game_shot, dtype=np.uint8)[:,:,:CHANNELS]
         score = self.get_score(score_shot)
         self.game_steps += 1
         done = self.is_done(game_state)
@@ -166,7 +170,7 @@ class Game:
         return game_shot, score_shot
 
     def get_score(self, shot):
-        img = np.array(shot)[:,:,:3]  # takes 1 channel
+        img = np.array(shot)[:,:,:CHANNELS]  # BGR channels
         score = pytesseract.image_to_string(image=img)
         regex = re.compile("-?[0-9]+.?[0-9]")
         result = regex.findall(score)
