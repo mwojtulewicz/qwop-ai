@@ -14,14 +14,15 @@ start = time.time()
 
 for i in range(n):
     action = random.choice(actions)
-    state, reward, done, d = env.step(action)
-    print(f'{i} -- action: {action}, reward: {reward}, done: {done}, dict: {d}')
-    if i%5==0:
+    state, score, done, d = env.step(action, update_score=i%5)
+    print(f'{i} -- action: {action}, reward: {score}, done: {done}, dict: {d}')
+    if i%10==0:
         plt.imshow(state)
-        plt.title(f'frame: {i} -- action: {action}, reward: {reward}, done: {done}')
+        plt.title(f'frame: {i} -- action: {action}, reward: {score}, done: {done}')
         plt.show()
 
 stop = time.time()
+print(state.shape)
 
 print('elapsed time: {:.2f}, fps = {:.2f}'.format(stop-start, n/(stop-start)))
 

@@ -4,6 +4,7 @@
 import pygetwindow
 import pyautogui
 import numpy as np
+import cv2
 import time
 import mss 
 import os
@@ -28,10 +29,10 @@ SCORE_HOFFSET = 250
 SCORE_VOFFSET = 89
 SCORE_WIDTH = 320
 SCORE_HEIGHT = 40
-GAME_HOFFSET = 10
+GAME_HOFFSET = 10  # 220  # 10
 GAME_VOFFSET = 174
-GAME_WIDTH = 800
-GAME_HEIGHT = 380
+GAME_WIDTH = 800  # 360  # 800
+GAME_HEIGHT = 380  # 360  # 380
 CHANNELS = 3
 PAUSE_X = FULL_HOFFSET + 10
 PAUSE_Y = FULL_VOFFSET + 10
@@ -63,12 +64,13 @@ class Game:
         self.activate_game()
         self.mute()
         self.pause()
+        self.last_score = 0
 
         self.action_space = len(ACTION_LOOKUP)
         self.state_space = (GAME_HEIGHT, GAME_WIDTH, CHANNELS)
 
 
-    def step(self, action):
+    def step(self, action, update_score=False):
         # one step in agent-env information loop
         # returns: observation, reward, done, info_dict
         # game is unpaused only when taking an action
@@ -76,12 +78,17 @@ class Game:
         self.take_action(action)
         game_shot, score_shot = self.take_screen_shots()
         self.pause()
-        game_state = np.array(game_shot, dtype=np.uint8)[:,:,:CHANNELS]
-        score = self.get_score(score_shot)
+        full_game = np.array(game_shot, dtype=np.uint8)[:,:,:CHANNELS]
+        game_state = cv2.resize(full_game[:360,210:570,:], (0,0), fx=0.25, fy=0.25)
+        done = self.is_done(full_game)
+        if update_score or done:
+            score = self.get_score(score_shot)
+            self.last_score = score 
+        else:
+            score = self.last_score
         self.game_steps += 1
-        done = self.is_done(game_state)
         # reward = self.calculate_reward(score)
-        reward = (score, self.game_steps)
+        reward = score
         info_dict = {
             'unpaused_time': self.unpaused_time,
             'paused_time': self.paused_time
@@ -95,7 +102,8 @@ class Game:
         time.sleep(PRESS_TIME)
         pyautogui.keyUp('r')
         self.pause()
-        self.game_steps = 0
+        self.game_steps = -1
+        return self.step(0, update_score=True)
 
     def close(self):
         # only closes game window
