@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 MAX_EPS = 1
 MIN_EPS = 0.1
-DECAY = 0.01
+DECAY = 0.003
 
 def epsilon(episode):
     return MIN_EPS + (MAX_EPS-MIN_EPS)*np.exp(-DECAY*episode)
