@@ -1,7 +1,9 @@
 # first try to implement DQL Agent
 
 from time import time
+from pytesseract.pytesseract import prepare
 from tensorflow.keras import layers
+from tensorflow.python.keras import initializers
 from tensorflow.python.keras.engine.input_layer import Input
 from tensorflow.python.keras.layers.convolutional import Conv2D
 from tensorflow.python.keras.layers.core import Flatten
@@ -9,21 +11,22 @@ from Game import Game
 import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow import keras as keras
+from scipy.special import softmax
 
 import keyboard
 
 
-INPUT_SHAPE = (-1,90,90,1)
+INPUT_SHAPE = (-1,90,90)
 NUM_ACTIONS = 5
 LR = 0.5
-GAMMA = 0.8
+GAMMA = 0.99
 MAX_EPS = 1
-MIN_EPS = 0.01
-DECAY = 0.05
-NUM_EPISODES = 200
-MAX_TIMESTEPS = 500
-PENALTY = -1000
-ALPHA = 0.1
+MIN_EPS = 0.1
+DECAY = 0.01
+NUM_EPISODES = 500
+MAX_TIMESTEPS = 200
+PENALTY = -10
+ALPHA = 0.2
 
 hyperparams = {
     'input_shape': INPUT_SHAPE,
@@ -39,14 +42,14 @@ hyperparams = {
     'lrelu_alpha': ALPHA
 }
 
-def model(input_shape=INPUT_SHAPE[1:], output_shape=NUM_ACTIONS):
+def model(input_shape=INPUT_SHAPE, output_shape=NUM_ACTIONS):
     model = keras.models.Sequential([
         keras.layers.Flatten(),
         keras.layers.Dense(units=350, activation='relu'),
         keras.layers.Dense(units=200, activation='relu'),
-        keras.layers.Dense(units=output_shape, activation='relu')
+        keras.layers.Dense(units=output_shape, activation=keras.layers.LeakyReLU(alpha=ALPHA), kernel_initializer='zeros')
     ])
-    model.compile(optimizer='adam', loss=keras.losses.Huber())
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.01), loss='mse')
     return model
 
 def prepare_observation(obs):
@@ -55,22 +58,23 @@ def prepare_observation(obs):
 def calculate_reward(score, game_steps, done):
     if not done:
         # if score < 0: return 0
-        return 0  # score  # **2 - game_steps/10  # / (game_steps+10)
+        return int(game_steps==MAX_TIMESTEPS) * (score ** 2) # return score^2 if finished without dying, else 0
+        # **2 - game_steps/10  # / (game_steps+10)
         # return 2*(score+1)**2 + game_steps/50  # exploited by standing still
-    elif game_steps==MAX_TIMESTEPS:
-        return score**2
-    else:
+    elif done:
         distance_score = score
         time_score = -(game_steps/(abs(distance_score)+1e5))
         return distance_score + time_score
+        # return -10
+        
 
 def discount_reward(reward_log):
-    discount = 0
+    for rew in reversed(reward_log):
+        pass
 
 
 env = Game()
 Qnet = model()
-#steps_to_udpate_model = 0
 epsilon = MAX_EPS
 
 timesteps = []
@@ -80,46 +84,44 @@ best_distance = []
 for episode in range(NUM_EPISODES):
 
     print('\n\nEPISODE: {:2d} --> epsilon = {:.2f}'.format(episode,epsilon))
+    
+    obs, score, done, info = env.reset()
+    obs = prepare_observation(obs)
 
     episode_log = []
     best_d = 0
-    
-    obs,score,done,info = env.reset()
-    obs = prepare_observation(obs)
-    qvalues = Qnet(obs).numpy().flatten()
-    # R = calculate_reward(score, 0, done)
-    # print(qvalues, np.argmax(qvalues))
+    prev_obs = None
 
     for t in range(MAX_TIMESTEPS):
-        #steps_to_udpate_model += 1
         
-        if np.random.rand() <= epsilon:
-            action = np.random.choice(5)
-        else:
-            action = np.argmax(qvalues)
+        x_diff = obs - prev_obs if prev_obs is not None else obs
+        prev_obs = obs
 
-        n_obs, score, done, info = env.step(action, t%5==0)
-        n_obs = prepare_observation(n_obs)
-        qvalues = Qnet(n_obs).numpy().flatten()
+        qvalues = Qnet(x_diff).numpy().flatten()
+
+        qvs = softmax(qvalues)
+        action = np.random.choice(5,p=qvs)
+
+        # if np.random.rand() <= epsilon:
+        #     # action = np.random.choice(5)
+        #     qvs = softmax(qvalues)
+        #     action = np.random.choice(5,p=qvs)
+        # else:
+        #     action = np.argmax(qvalues)
+
+        obs, score, done, info = env.step(action, False)
+        obs = prepare_observation(obs)
 
         if score > best_d:
             best_d = score
 
         R = calculate_reward(score, t+1, done)
         
-        log = (obs, action, R)
+        log = (x_diff, action, R)
         episode_log.append(log)
 
-        # newQ = (1-LR)*qvalues[action] + LR*(R + GAMMA*np.max(n_qvalues))
-        # target = np.hstack((qvalues[:action],newQ,qvalues[action+1:])).reshape(1,-1)
-        # Qnet.fit(obs, target, verbose=0)
-
-        # qvalues = n_qvalues
-        obs = n_obs
-
         if t%10==0:
-            print(' - t: {:<4d}- Rt = {:.2f}'.format(t,R))
-            # print('   -- qv:', qvalues, '- target:', target[0])
+            print(' |- t:',t,'a:',action,'qv:',qvalues,'qvs:',qvs)
 
         if done or keyboard.is_pressed('x'):
             break
@@ -127,30 +129,30 @@ for episode in range(NUM_EPISODES):
     rewards.append(R)
     timesteps.append(t)
     best_distance.append(best_d)
-    print(f'--- R: {R}, dur: {t}, dist: {best_d}')
+    print(f' -- R: {R}, dur: {t}, dist: {best_d}')
     epsilon = MIN_EPS + (MAX_EPS-MIN_EPS)*np.exp(-DECAY*episode)
 
-    x = []
-    y = []
+    inputs  = []
+    outputs = []
     
-    n_obs = obs
-    n_qvalues = Qnet(n_obs).numpy().flatten()
+    n_x = obs - prev_obs
+    n_qvalues = Qnet(n_x).numpy().flatten()
     while episode_log:
-        obs, action, R = episode_log.pop()
-        qvalues = Qnet(obs).numpy().flatten()
+        x, action, R = episode_log.pop()
+        qvalues = Qnet(x).numpy().flatten()
         newQ = (1-LR)*qvalues[action] + LR*(R + GAMMA*np.max(n_qvalues))
         target = np.hstack((qvalues[:action],newQ,qvalues[action+1:])).reshape(1,-1)
         
-        # Qnet.fit(obs, target, verbose=0)
-        x.append(obs)
-        y.append(target)
+        inputs.append(obs)
+        outputs.append(target)
 
-        n_obs = obs
-        n_qvalues = Qnet(n_obs).numpy().flatten() 
+        n_x = x
+        n_qvalues = Qnet(n_x).numpy().flatten() 
 
-    x = np.array(x).reshape(INPUT_SHAPE)
-    y = np.array(y).reshape(-1,1,NUM_ACTIONS)
-    Qnet.fit(x,y,epochs=1)
+    X = np.array(inputs).reshape(-1,90,90)
+    Y = np.array(outputs).reshape(-1,1,NUM_ACTIONS)
+    #Qnet.train_on_batch(X,Y)
+    Qnet.fit(X,Y,shuffle=False,batch_size=1,epochs=1)
     
     if keyboard.is_pressed('x'):
         break
