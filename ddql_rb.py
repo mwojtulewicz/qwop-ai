@@ -40,8 +40,10 @@ def calculate_reward(score_diff, done):
         return -4
     elif score_diff > 0:
         return 1 + (score_diff//0.3)
-    elif score_diff < 0:
+    elif score_diff == 0:
         return -0.4
+    elif score_diff < 0:
+        return -1
         
 
 
@@ -152,10 +154,11 @@ for episode in range(NUM_EPISODES):
                 if not done:
                     newQ += GAMMA * max(Qtarget(x_t_1).numpy().flatten())
                 qvalues[action] = newQ
+                target = qvalues.reshape(1,-1)
                 # target = np.hstack((qvalues[:action], newQ, qvalues[action+1:])).reshape(1,-1)
 
                 X.append(x_t)
-                Y.append(qvalues)
+                Y.append(target)
             
             X = np.array(X).reshape(-1,90,90,2)
             Y = np.array(Y).reshape(-1,1,5)
