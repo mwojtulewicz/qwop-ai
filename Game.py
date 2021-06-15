@@ -94,6 +94,27 @@ class Game:
             'paused_time': self.paused_time
         }
         return game_state, reward, done, info_dict
+    
+    def step_test(self, action, update_score=False):
+        self.unpause()
+        self.take_action(action)
+        game_shot, score_shot = self.take_screen_shots()
+        # self.pause()
+        full_game = np.array(game_shot, dtype=np.uint8)[:,:,:CHANNELS]
+        game_state = cv2.resize(full_game[:360,210:570,:], (0,0), fx=0.25, fy=0.25)
+        done = self.is_done(full_game)
+        if update_score or done:
+            score = self.get_score(score_shot)
+            self.last_score = score 
+        else:
+            score = self.last_score
+        self.game_steps += 1
+        # reward = self.calculate_reward(score)
+        reward = score
+        info_dict = {
+            'type': "test loop"
+        }
+        return game_state, reward, done, info_dict
 
     def reset(self):
         # uses qwop reset function

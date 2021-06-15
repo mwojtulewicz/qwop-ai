@@ -37,13 +37,13 @@ def prepare_observation(obs):
 
 def calculate_reward(score_diff, done):
     if done:
-        return -4
+        return -10
     elif score_diff > 0:
-        return 1 + (score_diff//0.3)
+        return 1 + (score_diff//0.2)
     elif score_diff == 0:
-        return -0.4
+        return -0.1
     elif score_diff < 0:
-        return -1
+        return -0.5
         
 
 
@@ -56,7 +56,7 @@ TARGET_NET_UPDATE_FREQ = 100
 TRAIN_FREQ = 5
 BATCH_SIZE = 10
 LR = 0.5
-GAMMA = 0.95
+GAMMA = 0.975
 NUM_EPISODES = 50
 MAX_TIMESTEPS = 1000
 CHECKPOINT_FREQ = 10
@@ -148,16 +148,16 @@ for episode in range(NUM_EPISODES):
             Y = []
 
             for i in trans_indicies:
-                x_t, action, r_t, done, x_t_1 = replay_buffer[i]
-                qvalues = Qnet(x_t).numpy().flatten()
-                newQ = r_t               #(1-LR)*qvalues[action] + LR*(R + GAMMA*np.max(n_qvalues))
-                if not done:
-                    newQ += GAMMA * max(Qtarget(x_t_1).numpy().flatten())
-                qvalues[action] = newQ
+                _xt, _a, _rt, _d, _xt_1 = replay_buffer[i]
+                qvalues = Qnet(_xt).numpy().flatten()
+                newQ = _rt               
+                if not _d:
+                    newQ += GAMMA * max(Qtarget(_xt_1).numpy().flatten())
+                qvalues[_a] = newQ
                 target = qvalues.reshape(1,-1)
                 # target = np.hstack((qvalues[:action], newQ, qvalues[action+1:])).reshape(1,-1)
 
-                X.append(x_t)
+                X.append(_xt)
                 Y.append(target)
             
             X = np.array(X).reshape(-1,90,90,2)
@@ -191,13 +191,13 @@ for episode in range(NUM_EPISODES):
     
     if episode%CHECKPOINT_FREQ==0:
         print(f' -- chechpoint {episode} --')
-        keras.models.save_model(Qnet, f'models/netword_checkpoint_ep{episode}')
+        keras.models.save_model(Qnet, f'models/network_checkpoint_ep{episode}.h5')
 
     if keyboard.is_pressed('x'):
         break
 
 env.close()
-keras.models.save_model(Qnet, 'models/network_ddqlrb.hdf5')
+keras.models.save_model(Qnet, 'models/network_ddqlrb.h5')
 
 plt.figure(figsize=(12,6.5))
 plt.title('Average run duration'); plt.xlabel('Episode number'); plt.ylabel('No timesteps'), plt.grid()
@@ -219,7 +219,7 @@ plt.show()
 
 plt.figure(figsize=(12,6.5))
 plt.title('Deaths per episode'); plt.xlabel('Episode number'); plt.ylabel('Number of deaths'), plt.grid()
-plt.plot(best_distance)
+plt.plot(deaths)
 plt.savefig('models/deaths')
 plt.show()
 
