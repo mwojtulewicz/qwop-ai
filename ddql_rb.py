@@ -1,6 +1,6 @@
 # first try to implement DQL Agent
 
-from time import time
+import time
 import json
 from pytesseract.pytesseract import prepare
 from tensorflow.keras import layers
@@ -60,12 +60,11 @@ NUM_EPISODES = 500
 MAX_TIMESTEPS = 1000
 MAX_EPS = 1
 MIN_EPS = 0.1
-DECAY = (MAX_EPS-MIN_EPS)/NUM_EPISODES
+DECAY = (MAX_EPS-MIN_EPS)/50
 
 hiperparams = {
     'input_shape': INPUT_SHAPE,
     'num_actions': NUM_ACTIONS,
-    'Q_learning_rate': LR,
     'gamma': GAMMA,
     'min_epsilon': MIN_EPS,
     'max_epsilon': MAX_EPS,
@@ -93,6 +92,7 @@ epsilon = MAX_EPS
 timesteps = []
 rewards = []
 best_distance = []
+deaths = []
 
 for episode in range(NUM_EPISODES):
 
@@ -106,6 +106,7 @@ for episode in range(NUM_EPISODES):
     best_d = 0
     r_sum = 0
     n_runs = 1
+    start_time = time.time()
 
 
     for t in range(MAX_TIMESTEPS):
@@ -158,7 +159,7 @@ for episode in range(NUM_EPISODES):
             
             X = np.array(X).reshape(-1,90,90,2)
             Y = np.array(Y).reshape(-1,1,5)
-            Qnet.fit(X,Y,batch_size=BATCH_SIZE,epochs=1)
+            Qnet.fit(X,Y,batch_size=BATCH_SIZE,epochs=1,verbose=1)
 
         if t%TARGET_NET_UPDATE_FREQ==0:
             print(' |  updating target network')
@@ -180,9 +181,10 @@ for episode in range(NUM_EPISODES):
     rewards.append(r_sum)
     timesteps.append(MAX_TIMESTEPS/n_runs)
     best_distance.append(best_d)
+    deaths.append(n_runs-1)
     epsilon -= DECAY  # MIN_EPS + (MAX_EPS-MIN_EPS)*np.exp(-DECAY*episode)
     
-    print(f' -- rewards sum: {r_sum}, durarion: {t}, best distance: {best_d}')
+    print(f' -- rewards sum: {r_sum}, duration: {t}, best distance: {best_d}, deaths: {n_runs-1}, time: {time.time()-start_time}')
 
     if keyboard.is_pressed('x'):
         break
@@ -206,6 +208,12 @@ plt.figure(figsize=(12,6.5))
 plt.title('Episode distance'); plt.xlabel('Episode number'); plt.ylabel('Distance'), plt.grid()
 plt.plot(best_distance)
 plt.savefig('models/distance')
+plt.show()
+
+plt.figure(figsize=(12,6.5))
+plt.title('Deaths per episode'); plt.xlabel('Episode number'); plt.ylabel('Number of deaths'), plt.grid()
+plt.plot(best_distance)
+plt.savefig('models/deaths')
 plt.show()
 
 f = open("models/hiperparams.json","w")
