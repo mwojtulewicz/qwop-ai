@@ -39,11 +39,9 @@ def calculate_reward(score_diff, done):
     if done:
         return -4
     elif score_diff > 0:
-        return 1
-    elif score_diff == 0:
-        return 0
+        return 1 + (score_diff//0.3)
     elif score_diff < 0:
-        return -1
+        return -0.4
         
 
 
@@ -51,16 +49,18 @@ def calculate_reward(score_diff, done):
 INPUT_SHAPE = (-1,90,90,2)
 NUM_ACTIONS = 5
 MIN_BUFFER_LENGTH = 250
-MAX_BUFFER_LENGTH = 8000
+MAX_BUFFER_LENGTH = 2000
 TARGET_NET_UPDATE_FREQ = 100
+TRAIN_FREQ = 5
 BATCH_SIZE = 10
 LR = 0.5
-GAMMA = 0.99
-NUM_EPISODES = 500
+GAMMA = 0.95
+NUM_EPISODES = 50
 MAX_TIMESTEPS = 1000
+CHECKPOINT_FREQ = 10
 MAX_EPS = 1
 MIN_EPS = 0.1
-DECAY = (MAX_EPS-MIN_EPS)/50
+DECAY = (MAX_EPS-MIN_EPS)/30
 
 hiperparams = {
     'input_shape': INPUT_SHAPE,
@@ -75,6 +75,7 @@ hiperparams = {
     'min_buffer_length': MIN_BUFFER_LENGTH,
     'max_buffer_length': MAX_BUFFER_LENGTH,
     'target_net_update_freq': TARGET_NET_UPDATE_FREQ,
+    'train_freq': TRAIN_FREQ,
     'batch_size': BATCH_SIZE,
     'optimizer': {'class':'Adam', 'lr':0.0005, 'loss':'MSE'}
 }
@@ -114,8 +115,8 @@ for episode in range(NUM_EPISODES):
         qvalues = Qnet(x_t).numpy().flatten()
         qvs = softmax(qvalues)
         if np.random.rand() <= epsilon:
-            # action = np.random.choice(5)
-            action = np.random.choice(NUM_ACTIONS,p=qvs)
+            action = np.random.choice(5)
+            # action = np.random.choice(NUM_ACTIONS,p=qvs)
         else:
             action = np.argmax(qvalues)
 
@@ -135,12 +136,10 @@ for episode in range(NUM_EPISODES):
         prev_score = score
         if len(replay_buffer)>MAX_BUFFER_LENGTH:
             replay_buffer.pop(0)
-
-        if t%BATCH_SIZE==0:
+        
+        if (len(replay_buffer) > MIN_BUFFER_LENGTH) and (t%TRAIN_FREQ==0):
             print(' |- t:',t,'a:',action,'qv:',qvalues,'qvs:',qvs)
-
-        if (len(replay_buffer) > MIN_BUFFER_LENGTH) and (t%BATCH_SIZE==0):
-            print(' |  performing SGD')
+            print(' |  performing SGD', end=' ')
             trans_indicies = np.random.choice(len(replay_buffer), size=BATCH_SIZE)
 
             X = []
@@ -152,10 +151,11 @@ for episode in range(NUM_EPISODES):
                 newQ = r_t               #(1-LR)*qvalues[action] + LR*(R + GAMMA*np.max(n_qvalues))
                 if not done:
                     newQ += GAMMA * max(Qtarget(x_t_1).numpy().flatten())
-                target = np.hstack((qvalues[:action], newQ, qvalues[action+1:])).reshape(1,-1)
+                qvalues[action] = newQ
+                # target = np.hstack((qvalues[:action], newQ, qvalues[action+1:])).reshape(1,-1)
 
                 X.append(x_t)
-                Y.append(target)
+                Y.append(qvalues)
             
             X = np.array(X).reshape(-1,90,90,2)
             Y = np.array(Y).reshape(-1,1,5)
@@ -182,9 +182,13 @@ for episode in range(NUM_EPISODES):
     timesteps.append(MAX_TIMESTEPS/n_runs)
     best_distance.append(best_d)
     deaths.append(n_runs-1)
-    epsilon -= DECAY  # MIN_EPS + (MAX_EPS-MIN_EPS)*np.exp(-DECAY*episode)
+    epsilon = max(MIN_EPS, epsilon-DECAY)  # MIN_EPS + (MAX_EPS-MIN_EPS)*np.exp(-DECAY*episode)
     
     print(f' -- rewards sum: {r_sum}, duration: {t}, best distance: {best_d}, deaths: {n_runs-1}, time: {time.time()-start_time}')
+    
+    if episode%CHECKPOINT_FREQ==0:
+        print(f' -- chechpoint {episode} --')
+        keras.models.save_model(Qnet, f'models/netword_checkpoint_ep{episode}')
 
     if keyboard.is_pressed('x'):
         break
