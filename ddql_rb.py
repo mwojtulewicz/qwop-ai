@@ -1,14 +1,7 @@
-# first try to implement DQL Agent
+# Double Deep Q-Learning Agent with Replay Buffer
 
 import time
 import json
-from pytesseract.pytesseract import prepare
-from tensorflow.keras import layers
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras.engine.input_layer import Input
-from tensorflow.python.keras.layers.advanced_activations import ReLU
-from tensorflow.python.keras.layers.convolutional import Conv2D
-from tensorflow.python.keras.layers.core import Flatten
 from Game import Game
 import matplotlib.pyplot as plt
 import numpy as np
@@ -51,18 +44,18 @@ def calculate_reward(score_diff, done):
 INPUT_SHAPE = (-1,90,90,2)
 NUM_ACTIONS = 5
 MIN_BUFFER_LENGTH = 250
-MAX_BUFFER_LENGTH = 2000
+MAX_BUFFER_LENGTH = 2500
 TARGET_NET_UPDATE_FREQ = 100
 TRAIN_FREQ = 5
-BATCH_SIZE = 10
+BATCH_SIZE = 16
 LR = 0.5
-GAMMA = 0.975
+GAMMA = 0.99
 NUM_EPISODES = 50
 MAX_TIMESTEPS = 1000
 CHECKPOINT_FREQ = 10
 MAX_EPS = 1
 MIN_EPS = 0.1
-DECAY = (MAX_EPS-MIN_EPS)/30
+DECAY = (MAX_EPS-MIN_EPS)/35
 
 hiperparams = {
     'input_shape': INPUT_SHAPE,
@@ -92,12 +85,12 @@ replay_buffer = []
 
 epsilon = MAX_EPS
 
-timesteps = []
-rewards = []
-best_distance = []
+avg_timesteps = []
+cum_rewards = []
+avg_distances = []
 deaths = []
 
-for episode in range(NUM_EPISODES):
+for episode in range(1,NUM_EPISODES+1):
 
     print('\n\nEPISODE: {:2d} of {:2d} --> epsilon = {:.2f}'.format(episode, NUM_EPISODES, epsilon))
     
@@ -106,9 +99,9 @@ for episode in range(NUM_EPISODES):
     prev_obs = obs
     x_t = np.stack((prev_obs,obs),axis=-1)
 
-    best_d = 0
     r_sum = 0
     n_runs = 1
+    dist = 0
     start_time = time.time()
 
 
@@ -169,25 +162,24 @@ for episode in range(NUM_EPISODES):
             Qtarget.set_weights(Qnet.get_weights())
 
         r_sum += r_t
-        if score > best_d:
-            best_d = score
         if done:
             obs, prev_score, _, _ = env.reset()
             obs = prepare_observation(obs)
             prev_obs = obs
             x_t = np.stack((prev_obs,obs),axis=-1)
             n_runs += 1
+            dist += score
 
         if keyboard.is_pressed('x'):
             break
     
-    rewards.append(r_sum)
-    timesteps.append(MAX_TIMESTEPS/n_runs)
-    best_distance.append(best_d)
+    cum_rewards.append(r_sum)
+    avg_timesteps.append(MAX_TIMESTEPS/n_runs)
+    avg_distances.append(dist)
     deaths.append(n_runs-1)
-    epsilon = max(MIN_EPS, epsilon-DECAY)  # MIN_EPS + (MAX_EPS-MIN_EPS)*np.exp(-DECAY*episode)
+    epsilon = max(MIN_EPS, epsilon-DECAY)
     
-    print(f' -- rewards sum: {r_sum}, duration: {t}, best distance: {best_d}, deaths: {n_runs-1}, time: {time.time()-start_time}')
+    print(f' -- cummulated reward: {r_sum}, avg run distance: {dist/n_runs}, deaths: {n_runs-1}, time: {time.time()-start_time}')
     
     if episode%CHECKPOINT_FREQ==0:
         print(f' -- chechpoint {episode} --')
@@ -197,28 +189,28 @@ for episode in range(NUM_EPISODES):
         break
 
 env.close()
-keras.models.save_model(Qnet, 'models/network_ddqlrb.h5')
+keras.models.save_model(Qnet, f'models/network_checkpoint_ep{episode}.h5')
 
 plt.figure(figsize=(12,6.5))
-plt.title('Average run duration'); plt.xlabel('Episode number'); plt.ylabel('No timesteps'), plt.grid()
-plt.plot(timesteps)
+plt.title('Average run duration'); plt.xlabel('Episode number'); plt.ylabel('No. timesteps'), plt.grid()
+plt.plot(avg_timesteps)
 plt.savefig('models/duration')
 plt.show()
 
 plt.figure(figsize=(12,6.5))
-plt.title('Episode cummulated reward'); plt.xlabel('Episode number'); plt.ylabel('Value'), plt.grid()
-plt.plot(rewards)
+plt.title('Episode cummulated reward'); plt.xlabel('Episode number'); plt.ylabel('Reward'), plt.grid()
+plt.plot(cum_rewards)
 plt.savefig('models/rewards')
 plt.show()
 
 plt.figure(figsize=(12,6.5))
-plt.title('Episode distance'); plt.xlabel('Episode number'); plt.ylabel('Distance'), plt.grid()
-plt.plot(best_distance)
+plt.title('Average run distance'); plt.xlabel('Episode number'); plt.ylabel('Distance'), plt.grid()
+plt.plot(avg_distances)
 plt.savefig('models/distance')
 plt.show()
 
 plt.figure(figsize=(12,6.5))
-plt.title('Deaths per episode'); plt.xlabel('Episode number'); plt.ylabel('Number of deaths'), plt.grid()
+plt.title('Deaths'); plt.xlabel('Episode number'); plt.ylabel('No. deaths'), plt.grid()
 plt.plot(deaths)
 plt.savefig('models/deaths')
 plt.show()

@@ -1,12 +1,6 @@
-# first try to implement DQL Agent
+# Deep Q-Learning Agent 
+# learning after each episode with reversed experience tuples
 
-from time import time
-from pytesseract.pytesseract import prepare
-from tensorflow.keras import layers
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras.engine.input_layer import Input
-from tensorflow.python.keras.layers.convolutional import Conv2D
-from tensorflow.python.keras.layers.core import Flatten
 from Game import Game
 import matplotlib.pyplot as plt
 import numpy as np

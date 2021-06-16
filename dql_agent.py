@@ -1,9 +1,5 @@
 # first try to implement DQL Agent
 
-from tensorflow.keras import layers
-from tensorflow.python.keras.engine.input_layer import Input
-from tensorflow.python.keras.layers.convolutional import Conv2D
-from tensorflow.python.keras.layers.core import Flatten
 from Game import Game
 import matplotlib.pyplot as plt
 import numpy as np

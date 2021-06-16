@@ -11,7 +11,7 @@ NUM_ACTIONS = 5
 def prepare_observation(obs):
     return obs[:,:,2].reshape(INPUT_SHAPE[:-1])
 
-fname = 'models/on_da_face/network_checkpoint_ep38.h5'
+fname = 'models/on_da_face/network_checkpoint_ep10.h5'
 agent = keras.models.load_model(fname)
 
 env = Game()
