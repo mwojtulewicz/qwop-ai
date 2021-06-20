@@ -11,7 +11,7 @@ NUM_ACTIONS = 5
 def prepare_observation(obs):
     return obs[:,:,2].reshape(INPUT_SHAPE[:-1])
 
-fname = 'models/on_da_face/network_checkpoint_ep10.h5'
+fname = 'models/knee_scraping/network_checkpoint_ep33.h5'
 agent = keras.models.load_model(fname)
 
 env = Game()
@@ -25,7 +25,8 @@ x_t = np.stack((prev_obs,obs),axis=-1)
 
 while not keyboard.is_pressed('x'):
     qvalues = agent(x_t).numpy().flatten()
-    
+    print(qvalues)
+    qvalues[0] /= 2
     if np.random.rand() <= epsilon:
         action = np.random.choice(5)
     else:
