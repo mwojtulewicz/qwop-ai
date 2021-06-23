@@ -18,7 +18,7 @@ GAME_PATH = LocalSettings.GAME_PATH
 
 # constants
 # general
-PRESS_TIME = 0.08
+PRESS_TIME = 0.1
 WIN_TITLE = 'Adobe Flash Player 32'
 # screenshots area bboxes
 FULL_HOFFSET = 10

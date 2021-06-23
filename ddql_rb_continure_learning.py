@@ -45,24 +45,28 @@ INPUT_SHAPE = (-1,90,90,2)
 NUM_ACTIONS = 5
 MIN_BUFFER_LENGTH = 250
 MAX_BUFFER_LENGTH = 2500
+
 TARGET_NET_UPDATE_FREQ = 150
 TRAIN_FREQ = 5
 BATCH_SIZE = 16
-LR = 0.5
 GAMMA = 0.99
-NUM_EPISODES = 200
+
+START_EPISODE = 73
+NUM_EPISODES = 500
 MAX_TIMESTEPS = 1000
 CHECKPOINT_FREQ = 10
-MAX_EPS = 1
+START_EPS = 0.2
 MIN_EPS = 0.1
-DECAY = (MAX_EPS-MIN_EPS)/50
+DECAY = (START_EPS-MIN_EPS)/20
+
+PRINT_FREQ = 20
 
 hiperparams = {
     'input_shape': INPUT_SHAPE,
     'num_actions': NUM_ACTIONS,
     'gamma': GAMMA,
     'min_epsilon': MIN_EPS,
-    'max_epsilon': MAX_EPS,
+    'max_epsilon': START_EPS,
     'epsilon_decay_type': 'linear',
     'epsilon_decay_value': DECAY,
     'num_episodes': NUM_EPISODES,
@@ -77,20 +81,23 @@ hiperparams = {
 
 
 env = Game()
-Qnet = model()
-Qtarget = model()
+
+saved_model = 'models/knee_scraping_2/network_checkpoint_ep72.h5'
+
+Qnet = keras.models.load_model(saved_model)
+Qtarget = keras.models.load_model(saved_model)
 Qtarget.set_weights(Qnet.get_weights())
 
 replay_buffer = []
 
-epsilon = MAX_EPS
+epsilon = START_EPS
 
 avg_timesteps = []
 cum_rewards = []
 avg_distances = []
 deaths = []
 
-for episode in range(1,NUM_EPISODES+1):
+for episode in range(START_EPISODE,NUM_EPISODES+1):
 
     print('\n\nEPISODE: {:2d} of {:2d} --> epsilon = {:.2f}'.format(episode, NUM_EPISODES, epsilon))
     
@@ -131,10 +138,16 @@ for episode in range(1,NUM_EPISODES+1):
         prev_score = score
         if len(replay_buffer)>MAX_BUFFER_LENGTH:
             replay_buffer.pop(0)
+
+        if t%PRINT_FREQ==0:
+            print(' |- t:',t,'a:',action,'qv:',qvalues,'qvs:',qvs)
+            verbose = 1
+        else:
+            verbose = 0
         
         if (len(replay_buffer) > MIN_BUFFER_LENGTH) and (t%TRAIN_FREQ==0):
-            print(' |- t:',t,'a:',action,'qv:',qvalues,'qvs:',qvs)
-            print(' |  performing SGD', end=' ')
+            # print(' |- t:',t,'a:',action,'qv:',qvalues,'qvs:',qvs)
+            # print(' |  performing SGD', end=' ')
             trans_indicies = np.random.choice(len(replay_buffer), size=BATCH_SIZE)
 
             X = []
@@ -155,7 +168,10 @@ for episode in range(1,NUM_EPISODES+1):
             
             X = np.array(X).reshape(-1,90,90,2)
             Y = np.array(Y).reshape(-1,1,5)
-            Qnet.fit(X,Y,batch_size=BATCH_SIZE,epochs=1,verbose=1)
+            Qnet.fit(X,Y,batch_size=BATCH_SIZE,epochs=1,verbose=verbose)
+            
+            if verbose==0:
+                print(' . ', end='')
 
         if t%TARGET_NET_UPDATE_FREQ==0:
             print(' |  updating target network')
@@ -169,7 +185,7 @@ for episode in range(1,NUM_EPISODES+1):
             x_t = np.stack((prev_obs,obs),axis=-1)
             n_runs += 1
             dist += score
-
+        
         if t==MAX_TIMESTEPS-1:
             dist += score
 
@@ -194,28 +210,31 @@ for episode in range(1,NUM_EPISODES+1):
 env.close()
 keras.models.save_model(Qnet, f'models/network_checkpoint_ep{episode}.h5')
 
+last_episode = episode
+episodes = list(range(START_EPISODE,last_episode+1))
+
 plt.figure(figsize=(12,6.5))
 plt.title('Average run duration'); plt.xlabel('Episode number'); plt.ylabel('No. timesteps'), plt.grid()
-plt.plot(avg_timesteps)
-plt.savefig('models/duration')
+plt.plot(episodes, avg_timesteps)
+plt.savefig('models/duration_2')
 plt.show()
 
 plt.figure(figsize=(12,6.5))
 plt.title('Episode cummulated reward'); plt.xlabel('Episode number'); plt.ylabel('Reward'), plt.grid()
-plt.plot(cum_rewards)
-plt.savefig('models/rewards')
+plt.plot(episodes, cum_rewards)
+plt.savefig('models/rewards_2')
 plt.show()
 
 plt.figure(figsize=(12,6.5))
 plt.title('Average run distance'); plt.xlabel('Episode number'); plt.ylabel('Distance'), plt.grid()
-plt.plot(avg_distances)
-plt.savefig('models/distance')
+plt.plot(episodes, avg_distances)
+plt.savefig('models/distance_2')
 plt.show()
 
 plt.figure(figsize=(12,6.5))
 plt.title('Deaths'); plt.xlabel('Episode number'); plt.ylabel('No. deaths'), plt.grid()
-plt.plot(deaths)
-plt.savefig('models/deaths')
+plt.plot(episodes, deaths)
+plt.savefig('models/deaths_2')
 plt.show()
 
 f = open("models/hiperparams.json","w")
