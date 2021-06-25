@@ -48,7 +48,7 @@ MAX_BUFFER_LENGTH = 2500
 TARGET_NET_UPDATE_FREQ = 150
 TRAIN_FREQ = 5
 BATCH_SIZE = 16
-LR = 0.5
+LR = 0.7
 GAMMA = 0.99
 NUM_EPISODES = 200
 MAX_TIMESTEPS = 1000
@@ -143,10 +143,10 @@ for episode in range(1,NUM_EPISODES+1):
             for i in trans_indicies:
                 _xt, _a, _rt, _d, _xt_1 = replay_buffer[i]
                 qvalues = Qnet(_xt).numpy().flatten()
-                newQ = _rt               
+                TD = _rt - qvalues[_a]
                 if not _d:
-                    newQ += GAMMA * max(Qtarget(_xt_1).numpy().flatten())
-                qvalues[_a] = newQ
+                    TD += GAMMA * max(Qtarget(_xt_1).numpy().flatten())
+                qvalues[_a] += LR * TD
                 target = qvalues.reshape(1,-1)
                 # target = np.hstack((qvalues[:action], newQ, qvalues[action+1:])).reshape(1,-1)
 
