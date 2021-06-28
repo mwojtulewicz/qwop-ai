@@ -61,6 +61,7 @@ class Game:
         self.paused_time = 0
         self.unpaused_time = 0
 
+        time.sleep(2.5)
         self.activate_game()
         self.mute()
         self.pause()
@@ -141,7 +142,6 @@ class Game:
             self.unpaused_time = time.time() - self.last_paused_ts
             self.last_paused_ts += self.unpaused_time
             self.paused = True
-            # print(f'paused on {self.last_paused_ts}')
 
 
     def unpause(self):
@@ -151,7 +151,6 @@ class Game:
             self.paused_time = time.time() - self.last_paused_ts
             self.last_paused_ts += self.paused_time
             self.paused = False
-            # print(f'unpaused on {self.last_paused_ts}')
 
     
     def open_window(self, game_path):
@@ -221,10 +220,7 @@ class Game:
     
     def activate_game(self):
         self.window.activate()
-        time.sleep(0.5)
         pyautogui.click(self.window.center)
-        time.sleep(0.2)
-        # self.pause()
     
     def mute(self):
         # click mute button in top right corner

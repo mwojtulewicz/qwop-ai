@@ -50,7 +50,7 @@ TRAIN_FREQ = 5
 BATCH_SIZE = 16
 LR = 0.7
 GAMMA = 0.99
-NUM_EPISODES = 200
+NUM_EPISODES = 500
 MAX_TIMESTEPS = 1000
 CHECKPOINT_FREQ = 10
 MAX_EPS = 1
@@ -174,6 +174,7 @@ for episode in range(1,NUM_EPISODES+1):
             dist += score
 
         if keyboard.is_pressed('x'):
+            dist += score
             break
     
     cum_rewards.append(r_sum)
